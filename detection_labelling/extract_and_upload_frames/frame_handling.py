@@ -8,14 +8,21 @@ class FrameHandler:
 
     Attributes:
         fps (int): Frames per second of the video.
-        fps_of_interest (int): Number of frames per second to be marked as 'of interest'.
+        fps_of_interest (float): Number of frames per second to be marked as 'of interest'.
         n_intermediate (int): Number of previous intermediate frames to store.
         intermediate_step (float): Step size to calculate intermediate frames between frames of interest.
         intermediate_frames_idx (list): Indices of the most recent intermediate frames.
-        intermediate_frames (list): Stored data of the most recent intermediate frames.
+        intermediate_frames (dict): Stored index and frame for most recent intermediate frames.
     """
 
-    def __init__(self, fps, fps_of_interest=2, n_intermediate=3):
+    def __init__(
+        self,
+        fps,
+        fps_of_interest: float = 2.0,
+        n_intermediate: int = 3,
+        seconds_skip_after_save: int = 2,
+        max_seconds_without_save: int = 10,
+    ):
         """
         Initialize the FrameHandler.
 
@@ -34,7 +41,9 @@ class FrameHandler:
         self.intermediate_frames_idx = []
         self.intermediate_frames = OrderedDict()
 
-        self.last_saved_frame_idx = float("-inf")
+        self.last_saved_frame_idx = -1
+        self.seconds_skip_after_save = seconds_skip_after_save
+        self.max_seconds_without_save = max_seconds_without_save
 
     def update_frame_counter(self):
         """
@@ -69,7 +78,7 @@ class FrameHandler:
 
     def update_intermediate_frames_idx(self, idx):
         """
-        Calculate the indices of intermediate frames based on the current frame index.
+        Calculate the indices of following intermediate frames based on the current frame index.
 
         Args:
             idx (int): Current frame index.
@@ -80,13 +89,13 @@ class FrameHandler:
 
     def update_intermediate_frames(self, idx, frame):
         """
-        Add a frame to the dictionary of previous frames with its index.
+        Store current frame and its index for later processing.
 
         Args:
             idx (int): The index of the frame.
             frame (Any): The frame data to store.
         """
-        self.intermediate_frames[idx] = (frame, None)
+        self.intermediate_frames[idx] = frame
         if len(self.intermediate_frames) > self.n_intermediate:
             self.intermediate_frames.popitem(last=False)
 
@@ -97,3 +106,26 @@ class FrameHandler:
         self.last_saved_frame_idx = idx
 
         self.intermediate_frames = OrderedDict()
+
+    def get_frames_since_last_save(self, idx):
+        """
+        Get the number of frames since the last save.
+        """
+        return idx - self.last_saved_frame_idx
+
+    def _should_skip_frame_processing(self, idx) -> bool:
+        """Check if frame processing should be skipped due to recent save."""
+        frames_since_last_save = self.get_frames_since_last_save(idx)
+        n_frames_threshold = self.fps * self.seconds_skip_after_save
+
+        return frames_since_last_save < n_frames_threshold
+
+    def is_long_time_since_last_save(self, idx: int) -> bool:
+        """
+        Checks if more than max_seconds_without_save have passed since the last save.
+        """
+        if self.last_saved_frame_idx == -1:
+            return True
+        frames_since_last_save = self.get_frames_since_last_save(idx)
+
+        return frames_since_last_save > self.fps * self.max_seconds_without_save

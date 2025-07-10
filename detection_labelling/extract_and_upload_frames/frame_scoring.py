@@ -4,7 +4,7 @@ import numpy as np
 
 
 class QuadrantScorer:
-    def __init__(self, grid_size, frame_shape, k=1):
+    def __init__(self, frame_shape, grid_size, k=1):
         """
         Initializes the QuadrantScorer with grid size, frame shape, and constant k.
 

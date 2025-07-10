@@ -9,7 +9,7 @@ def get_ultralytics_detections(
     frame: np.ndarray,
     model: YOLO,
     model_params: Dict[str, Any],
-    confidence_list: List[Tuple[List[int], float]] = None,
+    class_confidence: List[Tuple[List[int], float]] = None,
 ) -> sv.Detections:
     """
     Runs object detection on a single frame and filters out low-confidence detections
@@ -19,22 +19,20 @@ def get_ultralytics_detections(
         frame (np.ndarray): Input image/frame as a NumPy array (e.g., BGR or RGB).
         model (YOLO): An Ultralytics YOLO model or compatible callable model.
         model_params (Dict[str, Any]): Parameters to pass into the model's forward call (e.g., conf, iou, imgsz).
-        confidence_list (List[Tuple[List[int], float]], optional):
+        class_confidence (List[Tuple[List[int], float]], optional):
             List of (class_ids, threshold) pairs. Detections belonging to any class in class_ids
             below the given threshold will be filtered out.
 
     Returns:
         sv.Detections: Filtered detections compatible with the Supervision library.
     """
-    if confidence_list is None:
-        confidence_list = []
-
     results = model(frame, **model_params)[0]
     detections = sv.Detections.from_ultralytics(results)
 
-    for class_ids, threshold in confidence_list:
-        is_in_classes = np.isin(detections.class_id, class_ids)
-        is_below_threshold = detections.confidence < threshold
-        detections = detections[~(is_in_classes & is_below_threshold)]
+    if class_confidence:
+        for class_ids, threshold in class_confidence:
+            is_in_classes = np.isin(detections.class_id, class_ids)
+            is_below_threshold = detections.confidence < threshold
+            detections = detections[~(is_in_classes & is_below_threshold)]
 
     return detections

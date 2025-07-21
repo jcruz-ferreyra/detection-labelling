@@ -1,0 +1,21 @@
+input_folder: "raw/cctv_frames/"
+output_folder: "interim/cctv_frames"
+
+byol_dir: "models/byol/"
+byol_filename: "cctv_byol.pt"
+
+embed_dir: "raw/cctv_frames/embeddings"
+embed_filename: "cctv_embeddings.parquet"
+
+img_size: "256"
+batch_size: "16"
+
+sampling:
+  test:
+    - str_match: ["F053_LAG_H35"]
+      samples: 100
+  train:
+    - str_match: ["domo"]
+      samples: 15
+    - str_match: null
+      samples: 150

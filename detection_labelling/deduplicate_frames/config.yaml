@@ -1,0 +1,12 @@
+frames_folder: "raw/cctv_frames"
+polygons_json_filename: "parking_polygons.json"
+
+flann_index_params:
+  algorithm: 1
+  trees: 5
+
+flann_search_params:
+  checks: 50
+
+is_repeated_threshold: 0.05
+

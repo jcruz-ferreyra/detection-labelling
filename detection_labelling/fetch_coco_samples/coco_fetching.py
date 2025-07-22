@@ -1,5 +1,4 @@
-import os
-from pathlib import Path
+import logging
 
 import fiftyone as fo
 import fiftyone.zoo as foz
@@ -76,6 +75,7 @@ def _export_to_voc_format(ctx: CocoFetchingContext, coco_sample):
     logger.info(f"Exporting to VOC format: {ctx.output_raw_dir}")
 
     try:
+        ctx.output_raw_dir.mkdir(parents=True, exist_ok=True)
         coco_sample.export(
             export_dir=str(ctx.output_raw_dir),
             dataset_type=fo.types.dataset_types.VOCDetectionDataset,

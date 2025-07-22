@@ -372,6 +372,11 @@ def _process_frame_detections(
 
 def _process_video(ctx: FrameExtractionContext) -> ProcessingStats:
     """Process all video frames with detection and filtering."""
+    logger.info("Creating output directories")
+    
+    (ctx.output_dir / "images").mkdir(parents=True, exist_ok=True)
+    (ctx.output_dir / "annotations").mkdir(parents=True, exist_ok=True)
+
     logger.info("Starting main processing loop")
 
     stats = ProcessingStats()

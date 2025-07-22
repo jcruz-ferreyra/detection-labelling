@@ -5,7 +5,7 @@ import logging
 import os
 from pathlib import Path
 import shutil
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import cv2
 import numpy as np
@@ -27,14 +27,78 @@ def _initialize_sift_flann(ctx: FramesDeduplicationContext) -> None:
     logger.debug("SIFT and FLANN matchers initialized successfully")
 
 
+def _get_video_ids_with_files(ctx: FramesDeduplicationContext) -> Dict[str, List[str]]:
+    """Extract unique video IDs with their corresponding filenames."""
+    logger.info("Extracting unique video IDs and filenames")
+
+    images_dir = ctx.frames_dir / "images"
+    video_files = {}
+
+    for img_path in images_dir.iterdir():
+        if img_path.is_file() and img_path.suffix.lower() in [".jpg", ".jpeg", ".png"]:
+            parts = img_path.stem.split("_")
+
+            if len(parts) >= 2:
+                video_id = "_".join(parts[:-1])
+                filename_stem = img_path.stem
+
+                if video_id not in video_files:
+                    video_files[video_id] = []
+                video_files[video_id].append(filename_stem)
+
+    logger.info(f"Found {len(video_files)} unique video IDs to process")
+    for video_id, files in video_files.items():
+        logger.debug(f"Video {video_id}: {len(files)} files")
+
+    return video_files
+
+
+def _move_data_to_temp_dir(
+    ctx: FramesDeduplicationContext, video_id: str, filenames: List[str]
+) -> None:
+    """Move video's images and annotations to temp directories."""
+    logger.info(f"Moving {len(filenames)} files for video {video_id} to temp directories")
+
+    # Create temp directories
+    temp_images_dir = ctx.frames_dir / "images" / "temp"
+    temp_annotations_dir = ctx.frames_dir / "annotations" / "temp"
+
+    temp_images_dir.mkdir(exist_ok=True)
+    temp_annotations_dir.mkdir(exist_ok=True)
+
+    # Move files
+    moved_images = 0
+    moved_annotations = 0
+
+    for filename_stem in filenames:
+        for ext in [".png", ".jpg", ".jpeg"]:
+            src_img = ctx.frames_dir / "images" / f"{filename_stem}{ext}"
+            if src_img.exists():
+                dst_img = temp_images_dir / f"{filename_stem}{ext}"
+                shutil.move(str(src_img), str(dst_img))
+                moved_images += 1
+                break
+
+        # Move annotation file
+        src_ann = ctx.frames_dir / "annotations" / f"{filename_stem}.xml"
+        if src_ann.exists():
+            dst_ann = temp_annotations_dir / f"{filename_stem}.xml"
+            shutil.move(str(src_ann), str(dst_ann))
+            moved_annotations += 1
+
+    logger.info(
+        f"Moved {moved_images} images and {moved_annotations} annotations to temp directories"
+    )
+
+
 def _load_dataset_as_supervision(ctx: FramesDeduplicationContext) -> sv.DetectionDataset:
     """Load the dataset using Supervision from Pascal VOC format."""
     logger.info(f"Loading dataset from: {ctx.frames_dir}")
 
     try:
         ds = sv.DetectionDataset.from_pascal_voc(
-            images_directory_path=ctx.frames_dir / "images",
-            annotations_directory_path=ctx.frames_dir / "annotations",
+            images_directory_path=ctx.frames_dir / "images" / "temp",
+            annotations_directory_path=ctx.frames_dir / "annotations" / "temp",
         )
         logger.info(f"Loaded dataset with {len(ds)} samples")
         return ds
@@ -82,7 +146,7 @@ def _get_parking_polygons_from_json(
 def _get_polygons_for_filename(
     filename_stem: str, camera_polygons: Dict["str", List[sv.PolygonZone]]
 ) -> Optional[List[sv.PolygonZone]]:
-    logger.info(f"Retrieving polygon for: {filename_stem}")
+    logger.debug(f"Retrieving polygon for: {filename_stem}")
 
     parts = filename_stem.split("_")
 
@@ -303,6 +367,10 @@ def _move_repeated_frames(
     (target_dir / "images").mkdir(parents=True, exist_ok=True)
     (target_dir / "annotations").mkdir(parents=True, exist_ok=True)
 
+    # Temp directories
+    temp_images_dir = ctx.frames_dir / "images" / "temp"
+    temp_annotations_dir = ctx.frames_dir / "annotations" / "temp"
+
     repeated_idxs = np.where(is_repeated)[0]
     failed_moves = []
 
@@ -311,7 +379,7 @@ def _move_repeated_frames(
         filename_stem = file_path.stem
 
         # Move image file
-        src_img = ctx.frames_dir / "images" / file_path.name
+        src_img = temp_images_dir / file_path.name
         dst_img = target_dir / "images" / file_path.name
 
         try:
@@ -322,7 +390,7 @@ def _move_repeated_frames(
             continue
 
         # Move annotation file
-        src_ann = ctx.frames_dir / "annotations" / f"{filename_stem}.xml"
+        src_ann = temp_annotations_dir / f"{filename_stem}.xml"
         dst_ann = target_dir / "annotations" / f"{filename_stem}.xml"
 
         try:
@@ -339,13 +407,64 @@ def _move_repeated_frames(
     return
 
 
+def _recover_data_from_temp(ctx: FramesDeduplicationContext) -> None:
+    """Move all remaining files from temp directories back to original directories."""
+    logger.info("Recovering remaining data from temp directories")
+
+    # Temp and original directories
+    temp_images_dir = ctx.frames_dir / "images" / "temp"
+    temp_annotations_dir = ctx.frames_dir / "annotations" / "temp"
+    original_images_dir = ctx.frames_dir / "images"
+    original_annotations_dir = ctx.frames_dir / "annotations"
+
+    moved_images = 0
+    moved_annotations = 0
+
+    # Move all remaining images
+    if temp_images_dir.exists():
+        for img_file in temp_images_dir.iterdir():
+            if img_file.is_file():
+                dst = original_images_dir / img_file.name
+                try:
+                    shutil.move(str(img_file), str(dst))
+                    moved_images += 1
+                except Exception as e:
+                    logger.warning(f"Failed to recover image {img_file.name}: {e}")
+
+    # Move all remaining annotations
+    if temp_annotations_dir.exists():
+        for ann_file in temp_annotations_dir.iterdir():
+            if ann_file.is_file():
+                dst = original_annotations_dir / ann_file.name
+                try:
+                    shutil.move(str(ann_file), str(dst))
+                    moved_annotations += 1
+                except Exception as e:
+                    logger.warning(f"Failed to recover annotation {ann_file.name}: {e}")
+
+    logger.info(f"Recovered {moved_images} images and {moved_annotations} annotations from temp")
+
+    # Remove temp directories
+    shutil.rmtree(temp_images_dir, ignore_errors=True)
+    shutil.rmtree(temp_annotations_dir, ignore_errors=True)
+    logger.debug("Removed temp directories")
+
+
 def _log_dedup_stats(ctx: FramesDeduplicationContext, ds: sv.DetectionDataset) -> None:
     """Compute and log frame statistics per video after deduplication."""
     logger.info("Calculating deduplication statistics")
 
-    initial_frame_filenames = [Path(x).stem for x in ds.image_paths]
-    initial_video_filenames = ["_".join(x.split("_")[:-1]) for x in initial_frame_filenames]
-    initial_counts = Counter(initial_video_filenames)
+    # Get removed frame counts per video
+    removed_dir = ctx.frames_dir / "repeated/images"
+    try:
+        removed_frame_files = list(removed_dir.glob("*"))
+        removed_frame_filenames = [f.stem for f in removed_frame_files if f.is_file()]
+        removed_video_filenames = ["_".join(x.split("_")[:-1]) for x in removed_frame_filenames]
+        removed_counts = Counter(removed_video_filenames)
+
+    except Exception as e:
+        logger.error(f"Failed to scan remaining frames in {images_dir}: {e}")
+        raise
 
     # Get remaining frame counts per video
     images_dir = ctx.frames_dir / "images"
@@ -359,21 +478,21 @@ def _log_dedup_stats(ctx: FramesDeduplicationContext, ds: sv.DetectionDataset) -
         logger.error(f"Failed to scan remaining frames in {images_dir}: {e}")
         raise
 
-    all_video_ids = set(initial_counts) | set(keep_counts)
-    total_initial = sum(initial_counts.values())
+    all_video_ids = set(removed_counts) | set(keep_counts)
     total_keep = sum(keep_counts.values())
-    total_removed = total_initial - total_keep
+    total_removed = sum(removed_counts.values())
+    total_initial = total_keep + total_removed
 
     logger.info("Deduplication statistics by video:")
     logger.info("-" * 60)
 
-    for video_id in sorted(all_video_ids):  # ✅ Sort for consistent output
-        initial = initial_counts.get(video_id, 0)
-        remaining = keep_counts.get(video_id, 0)
-        removed = initial - remaining
+    for video_id in sorted(all_video_ids):
+        removed = removed_counts.get(video_id, 0)
+        keep = keep_counts.get(video_id, 0)
+        initial = keep + removed
         removed_pct = (removed / initial * 100) if initial > 0 else 0
 
-        logger.info(f"{video_id}: {initial} → {remaining} ({removed} removed, {removed_pct:.1f}%)")
+        logger.info(f"{video_id}: {initial} → {keep} ({removed} removed, {removed_pct:.1f}%)")
 
     # Overall summary
     logger.info("-" * 60)
@@ -391,20 +510,30 @@ def deduplicate_frames(ctx: FramesDeduplicationContext) -> None:
     # Set up sift and flann based matcher and add them to context
     _initialize_sift_flann(ctx)
 
-    # Load dataset
-    ds = _load_dataset_as_supervision(ctx)
+    video_files = _get_video_ids_with_files(ctx)
 
-    # Load parking zone polygons to filter out annotations
-    camera_polygons = _get_parking_polygons_from_json(ctx)
+    # Process each video separately
+    for video_id, filenames in video_files.items():
 
-    # Calculate key points and descriptors for each frame
-    features_list = _calculate_kp_and_descriptors(ctx, ds, camera_polygons)
+        _move_data_to_temp_dir(ctx, video_id, filenames)
 
-    # Get 1d array labelling each frame as repeated or not
-    is_repeated = _check_if_is_repeated(ctx, features_list)
+        # Load dataset
+        ds = _load_dataset_as_supervision(ctx)
 
-    # Move repeated frames as an archive folder
-    _move_repeated_frames(ctx, ds, is_repeated)
+        # Load parking zone polygons to filter out annotations
+        camera_polygons = _get_parking_polygons_from_json(ctx)
+
+        # Calculate key points and descriptors for each frame
+        features_list = _calculate_kp_and_descriptors(ctx, ds, camera_polygons)
+
+        # Get 1d array labelling each frame as repeated or not
+        is_repeated = _check_if_is_repeated(ctx, features_list)
+
+        # Move repeated frames as an archive folder
+        _move_repeated_frames(ctx, ds, is_repeated)
+
+        # Move retained data from temp folder to original one
+        _recover_data_from_temp(ctx)
 
     # Calculate retained and removed statistics per video
     _log_dedup_stats(ctx, ds)

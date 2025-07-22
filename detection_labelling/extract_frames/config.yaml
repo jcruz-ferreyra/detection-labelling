@@ -5,7 +5,7 @@ video_extension: .avi
 input_folder : "raw/cctv_videos"
 output_folder : "raw/cctv_frames"
 
-yolo_path: models/yolov8m/yolov8m.pt
+yolo_path: yolov8m/yolov8m.pt
 yolo_params:
   imgsz: 960
   verbose: false

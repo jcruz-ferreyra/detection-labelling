@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from detection_labelling.config import DATA_DIR, HOME_DIR
+from detection_labelling.config import DATA_DIR, MODELS_DIR
 from detection_labelling.utils import load_config, setup_logging
 
 script_name = Path(__file__).parent.name
@@ -38,7 +38,7 @@ if missing_keys:
     logger.error(f"Missing required config keys: {missing_keys}")
     raise ValueError(f"Missing required config keys: {missing_keys}")
 
-BYOL_DIR = HOME_DIR / script_config["byol_dir"]
+BYOL_DIR = MODELS_DIR / script_config["byol_dir"]
 BYOL_FILENAME = script_config["byol_filename"]
 
 EMBED_DIR = DATA_DIR / script_config["embed_dir"]
@@ -71,12 +71,12 @@ context = BatchSelectionContext(
 
 if context.train_byol:
     byol_path = BYOL_DIR / BYOL_FILENAME
-    logger.info(f"No BYOL model found at {byol_path}. Initializing training.")
+    logger.info(f"No BYOL model found at {context.byol_path}. Initializing training.")
     train_byol(context)
 
 if context.calculate_embed:
     embed_path = EMBED_DIR / EMBED_FILENAME
-    logger.info(f"No embeddings found at {context.byol_path}. Initializing training.")
+    logger.info(f"No embeddings found at {context.embed_path}. Initializing calculation.")
     calculate_embeddings(context)
 
 # Task main function

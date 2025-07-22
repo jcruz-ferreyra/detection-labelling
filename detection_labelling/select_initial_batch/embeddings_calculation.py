@@ -14,20 +14,20 @@ from .types import BatchSelectionContext
 logger = logging.getLogger(__name__)
 
 
-def _initialize_model(pretrained_path: Path, img_size: int, device: torch.device) -> BYOL:
+def _initialize_model(ctx: BatchSelectionContext) -> BYOL:
     """Setup ResNet50 and BYOL learner with pretrained weights."""
-    logger.info(f"Setting up BYOL learner with pretrained weights from: {pretrained_path}")
+    logger.info(f"Setting up BYOL learner with pretrained weights from: {ctx.byol_path}")
 
     try:
-        resnet = resnet50(weights=ResNet50_Weights.DEFAULT).to(device)
-        resnet.load_state_dict(torch.load(pretrained_path, map_location=device))
+        resnet = resnet50(weights=ResNet50_Weights.DEFAULT).to(ctx.device)
+        resnet.load_state_dict(torch.load(ctx.byol_path, map_location=ctx.device))
         logger.info("Pretrained weights loaded successfully")
 
-        ctx.byol = BYOL(resnet, image_size=img_size, hidden_layer="avgpool")
+        ctx.byol = BYOL(resnet, image_size=ctx.img_size, hidden_layer="avgpool")
         logger.info("BYOL learner initialized")
 
     except FileNotFoundError:
-        logger.error(f"Pretrained model not found at: {pretrained_path}")
+        logger.error(f"Pretrained model not found at: {ctx.byol_path}")
         raise
     except Exception as e:
         logger.error(f"Failed to setup BYOL model: {e}")
@@ -102,7 +102,7 @@ def calculate_embeddings(ctx: BatchSelectionContext) -> None:
     ctx.dataloader = create_image_dataloader(ctx.input_dir / "images", ctx.batch_size, transform)
 
     # Load pretrained BYOL model and add it to context
-    _initialize_model(ctx.byol_path, ctx.img_size, ctx.device)
+    _initialize_model(ctx)
 
     # Calculate embeddings for all images
     _calculate_embeddings_loop(ctx)

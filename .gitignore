@@ -6,6 +6,9 @@ data/**
 models/**
 !models/.gitkeep
 
+# Archive
+archive/
+
 # Mac OS-specific storage files
 .DS_Store
 

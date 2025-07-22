@@ -1,7 +1,7 @@
 input_folder: "raw/cctv_frames/"
-output_folder: "interim/cctv_frames"
+output_folder: "interim/cctv_frames_v1"
 
-byol_dir: "models/byol/"
+byol_dir: "byol"
 byol_filename: "cctv_byol.pt"
 
 embed_dir: "raw/cctv_frames/embeddings"

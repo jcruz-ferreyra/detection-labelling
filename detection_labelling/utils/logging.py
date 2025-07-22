@@ -38,7 +38,7 @@ def setup_logging(
     """
     # Set up logs directory
     log_dir = data_dir / "logs"
-    log_dir.mkdir(exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
 
     # Create log file path
     log_filename = f"{script_name}.log"

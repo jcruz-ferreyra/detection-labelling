@@ -20,14 +20,14 @@ CONFIG_PATH = Path(__file__).parent.resolve() / "config.yaml"
 logger.info(f"Loading config from: {CONFIG_PATH}")
 script_config = load_config(CONFIG_PATH)
 
-required_keys = ["output_folder", "project_classes"]
+required_keys = ["output_raw_folder", "output_interim_folder", "project_classes", "underrepresented_classes"]
 missing_keys = [key for key in required_keys if key not in script_config]
 if missing_keys:
     logger.error(f"Missing required config keys: {missing_keys}")
     raise ValueError(f"Missing required config keys: {missing_keys}")
 
 PROJECT_CLASSES = script_config["project_classes"]
-UNDERREPR_CLASSES = script_config["underreresented_classes"]
+UNDERREPR_CLASSES = script_config["underrepresented_classes"]
 
 # Create paths for frames directory
 OUTPUT_RAW_DIR = DATA_DIR / script_config["output_raw_folder"]
@@ -36,11 +36,6 @@ OUTPUT_INTERIM_DIR = DATA_DIR / script_config["output_interim_folder"]
 logger.info(f"Extracted frames main directory: {OUTPUT_RAW_DIR}")
 logger.info(f"Selected frames main directory: {OUTPUT_INTERIM_DIR}")
 
-logger.info("Creating output directories")
-os.makedirs(OUTPUT_RAW_DIR / "images", exist_ok=True)
-os.makedirs(OUTPUT_RAW_DIR / "annotations", exist_ok=True)
-os.makedirs(OUTPUT_INTERIM_DIR / "images", exist_ok=True)
-os.makedirs(OUTPUT_INTERIM_DIR / "annotations_oob", exist_ok=True)
 
 # Select initial labelling batch
 context = CocoFetchingContext(

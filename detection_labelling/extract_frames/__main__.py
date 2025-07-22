@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from detection_labelling.config import DATA_DIR, HOME_DIR
+from detection_labelling.config import DATA_DIR, MODELS_DIR
 from detection_labelling.utils import load_config, setup_logging
 
 script_name = Path(__file__).parent.name
@@ -45,7 +45,7 @@ VIDEO_DATE = script_config["video_date"]
 VIDEO_NUM = script_config["video_num"]
 VIDEO_EXTENSION = script_config["video_extension"]
 
-YOLO_PATH = HOME_DIR / script_config["yolo_path"]
+YOLO_PATH = MODELS_DIR / script_config["yolo_path"]
 YOLO_PARAMS = script_config["yolo_params"]
 
 CLASS_LABEL = {int(k): v for k, v in script_config["class_label"].items()}
@@ -65,10 +65,6 @@ OUTPUT_DIR = DATA_DIR / script_config["output_folder"]
 
 logger.info(f"Input main directory: {INPUT_DIR}")
 logger.info(f"Output main directory: {OUTPUT_DIR}")
-
-logger.info("Creating output directories")
-os.makedirs(OUTPUT_DIR / "images", exist_ok=True)
-os.makedirs(OUTPUT_DIR / "annotations", exist_ok=True)
 
 # Construct video path
 video_filename = f"{CAMERA_ID}_{VIDEO_DATE}_{VIDEO_NUM}{VIDEO_EXTENSION}"

@@ -117,7 +117,9 @@ def _get_frame_detections(
     logger.debug(f"Running detection on frame {idx}")
 
     try:
-        dets = get_ultralytics_detections(frame, ctx.model, ctx.yolo_params, ctx.class_confidence)
+        dets = get_ultralytics_detections(
+            frame, ctx.model, ctx.yolo_params, ctx.class_confidence, bgr=True
+        )
         logger.debug(f"Found {len(dets)} detections in frame {idx}")
         return dets
 
@@ -373,9 +375,9 @@ def _process_frame_detections(
 def _process_video(ctx: FrameExtractionContext) -> ProcessingStats:
     """Process all video frames with detection and filtering."""
     logger.info("Creating output directories")
-    
+
     (ctx.output_dir / "images").mkdir(parents=True, exist_ok=True)
-    (ctx.output_dir / "annotations").mkdir(parents=True, exist_ok=True)
+    (ctx.output_dir / "annotations_oob").mkdir(parents=True, exist_ok=True)
 
     logger.info("Starting main processing loop")
 
@@ -439,7 +441,9 @@ def _saved_frames_to_json(ctx: FrameExtractionContext) -> None:
             json.dump(regular_dict, f, indent=2)
 
         total_frames = sum(len(frames) for frames in ctx.saved_frames.values())
-        logger.debug(f"Saved frames dictionary updated: {json_path} ({total_frames} unique frames)")
+        logger.debug(
+            f"Saved frames dictionary updated: {json_path} ({total_frames} unique frames)"
+        )
 
     except Exception as e:
         logger.error(f"Failed to save frames dictionary: {e}")

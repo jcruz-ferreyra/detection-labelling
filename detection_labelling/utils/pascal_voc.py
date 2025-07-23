@@ -18,10 +18,13 @@ def save_as_pascal_voc(
     output_dir: Path,
     filename_stem: str,
     class_label: Dict[int, str],
+    save_image: bool = True,
 ) -> None:
     image_filename = f"{filename_stem}.png"
     image_path = output_dir / "images" / image_filename
-    cv2.imwrite(str(image_path), frame)
+
+    if save_image:
+        cv2.imwrite(str(image_path), frame)
 
     max_key = max(int(key) for key in class_label.keys())
     list_classes = [class_label.get(i, "none") for i in range(max_key + 1)]
@@ -34,7 +37,7 @@ def save_as_pascal_voc(
     )
 
     xml_filename = f"{filename_stem}.xml"
-    xml_path = output_dir / "annotations" / xml_filename
+    xml_path = output_dir / "annotations_oob" / xml_filename
 
     with open(xml_path, "w", encoding="utf-8") as xml_file:
         xml_file.write(voc_xml)

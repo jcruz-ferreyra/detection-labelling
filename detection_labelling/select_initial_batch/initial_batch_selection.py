@@ -11,6 +11,20 @@ from .types import BatchSelectionContext
 logger = logging.getLogger(__name__)
 
 
+def _validate_output_directories(ctx: BatchSelectionContext):
+    """Validate that output directory doesn't already exist."""
+
+    for sample in ctx.sampling.keys():
+        sampling_output_dir = ctx.output_dir / sample
+        if sampling_output_dir.exists():
+            logger.error(f"Directory already exists: {sampling_output_dir}")
+            raise ValueError(
+                f"Directory already exists: {sampling_output_dir}. Please remove it before running or try a different output directory name."
+            )
+
+    logger.info("Output directory validation passed")
+
+
 def _validate_sampling(ctx: BatchSelectionContext) -> None:
     """Validate sampling configuration allows only one null str_match."""
     logger.info("Validating sampling configuration")
@@ -217,7 +231,7 @@ def _copy_selected_filenames(
 
             # Copy annotations
             filename_stem = Path(filename).stem
-            src = ctx.input_dir / "annotations" / f"{filename_stem}.xml"
+            src = ctx.input_dir / "annotations_oob" / f"{filename_stem}.xml"
             dst = ctx.output_dir / subset_type / "annotations_oob" / f"{filename_stem}.xml"
             shutil.copy2(src, dst)
 
@@ -239,6 +253,8 @@ def select_initial_batch(ctx: BatchSelectionContext) -> None:
         ctx: BatchSelectionContext containing paths, model config, and runtime objects
     """
     logger.info("Starting initial batch selection")
+
+    _validate_output_directories(ctx)
 
     # Validate sampling structure loaded from script configuration
     _validate_sampling(ctx)

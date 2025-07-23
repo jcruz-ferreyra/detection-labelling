@@ -61,7 +61,7 @@ def _move_data_to_temp_dir(
 
     # Create temp directories
     temp_images_dir = ctx.frames_dir / "images" / "temp"
-    temp_annotations_dir = ctx.frames_dir / "annotations" / "temp"
+    temp_annotations_dir = ctx.frames_dir / "annotations_oob" / "temp"
 
     temp_images_dir.mkdir(exist_ok=True)
     temp_annotations_dir.mkdir(exist_ok=True)
@@ -80,7 +80,7 @@ def _move_data_to_temp_dir(
                 break
 
         # Move annotation file
-        src_ann = ctx.frames_dir / "annotations" / f"{filename_stem}.xml"
+        src_ann = ctx.frames_dir / "annotations_oob" / f"{filename_stem}.xml"
         if src_ann.exists():
             dst_ann = temp_annotations_dir / f"{filename_stem}.xml"
             shutil.move(str(src_ann), str(dst_ann))
@@ -98,7 +98,7 @@ def _load_dataset_as_supervision(ctx: FramesDeduplicationContext) -> sv.Detectio
     try:
         ds = sv.DetectionDataset.from_pascal_voc(
             images_directory_path=ctx.frames_dir / "images" / "temp",
-            annotations_directory_path=ctx.frames_dir / "annotations" / "temp",
+            annotations_directory_path=ctx.frames_dir / "annotations_oob" / "temp",
         )
         logger.info(f"Loaded dataset with {len(ds)} samples")
         return ds
@@ -365,11 +365,11 @@ def _move_repeated_frames(
 
     target_dir = ctx.frames_dir / "repeated"
     (target_dir / "images").mkdir(parents=True, exist_ok=True)
-    (target_dir / "annotations").mkdir(parents=True, exist_ok=True)
+    (target_dir / "annotations_oob").mkdir(parents=True, exist_ok=True)
 
     # Temp directories
     temp_images_dir = ctx.frames_dir / "images" / "temp"
-    temp_annotations_dir = ctx.frames_dir / "annotations" / "temp"
+    temp_annotations_dir = ctx.frames_dir / "annotations_oob" / "temp"
 
     repeated_idxs = np.where(is_repeated)[0]
     failed_moves = []
@@ -391,7 +391,7 @@ def _move_repeated_frames(
 
         # Move annotation file
         src_ann = temp_annotations_dir / f"{filename_stem}.xml"
-        dst_ann = target_dir / "annotations" / f"{filename_stem}.xml"
+        dst_ann = target_dir / "annotations_oob" / f"{filename_stem}.xml"
 
         try:
             shutil.move(str(src_ann), str(dst_ann))
@@ -413,9 +413,9 @@ def _recover_data_from_temp(ctx: FramesDeduplicationContext) -> None:
 
     # Temp and original directories
     temp_images_dir = ctx.frames_dir / "images" / "temp"
-    temp_annotations_dir = ctx.frames_dir / "annotations" / "temp"
+    temp_annotations_dir = ctx.frames_dir / "annotations_oob" / "temp"
     original_images_dir = ctx.frames_dir / "images"
-    original_annotations_dir = ctx.frames_dir / "annotations"
+    original_annotations_dir = ctx.frames_dir / "annotations_oob"
 
     moved_images = 0
     moved_annotations = 0
@@ -505,6 +505,12 @@ def _log_dedup_stats(ctx: FramesDeduplicationContext, ds: sv.DetectionDataset) -
 
 
 def deduplicate_frames(ctx: FramesDeduplicationContext) -> None:
+    """
+    Remove duplicate frames from video datasets using SIFT feature matching.
+
+    Args:
+        ctx: FramesDeduplicationContext containing all necessary parameters and objects
+    """
     logger.info("Starting frame deduplication process")
 
     # Set up sift and flann based matcher and add them to context

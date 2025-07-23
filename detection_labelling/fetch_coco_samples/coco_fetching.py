@@ -1,4 +1,5 @@
 import logging
+import shutil
 
 import fiftyone as fo
 import fiftyone.zoo as foz
@@ -10,14 +11,15 @@ from .types import CocoFetchingContext
 logger = logging.getLogger(__name__)
 
 
-def _validate_raw_output_directory(ctx: CocoFetchingContext):
+def _validate_output_directories(ctx: CocoFetchingContext):
     """Validate that output directory doesn't already exist."""
 
-    if ctx.output_raw_dir.exists():
-        logger.error(f"Directory already exists: {ctx.output_raw_dir}")
-        raise ValueError(
-            f"Directory already exists: {ctx.output_raw_dir}. Please remove it before running."
-        )
+    for output_dir in [ctx.output_raw_dir, ctx.output_interim_dir]:
+        if output_dir.exists():
+            logger.error(f"Directory already exists: {output_dir}")
+            raise ValueError(
+                f"Directory already exists: {output_dir}. Please remove it before running or try a different output directory name."
+            )
 
     logger.info("Output directory validation passed")
 
@@ -49,7 +51,7 @@ def _rename_folder_structure(ctx: CocoFetchingContext):
 
     logger.info("Renaming folder structure")
 
-    rename_map = {"labels": "annotations", "data": "images"}
+    rename_map = {"labels": "annotations_oob", "data": "images"}
 
     try:
         for old_name, new_name in rename_map.items():
@@ -94,7 +96,7 @@ def _load_dataset_as_supervision(ctx: CocoFetchingContext):
     try:
         ds = sv.DetectionDataset.from_pascal_voc(
             images_directory_path=ctx.output_raw_dir / "images",
-            annotations_directory_path=ctx.output_raw_dir / "annotations",
+            annotations_directory_path=ctx.output_raw_dir / "annotations_oob",
         )
         logger.info(f"Loaded dataset with {len(ds)} samples")
     except Exception as e:
@@ -172,6 +174,24 @@ def _save_filtered_dataset(ctx: CocoFetchingContext, filtered_ds):
         raise
 
 
+def _remove_raw_dataset(ctx: CocoFetchingContext):
+    """Remove the raw dataset folder and all its contents."""
+    try:
+        if ctx.output_raw_dir.exists():
+            logger.info(f"Removing raw dataset folder: {ctx.output_raw_dir}")
+            shutil.rmtree(ctx.output_raw_dir)
+            logger.info("Raw dataset folder removed successfully")
+        else:
+            logger.warning(f"Raw dataset folder not found: {ctx.output_raw_dir}")
+
+    except PermissionError as e:
+        logger.error(f"Permission denied when removing raw dataset folder: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Error removing raw dataset folder: {e}")
+        raise
+
+
 def fetch_coco_samples(ctx: CocoFetchingContext):
     """
     Fetch and process COCO samples with underrepresented classes.
@@ -181,7 +201,7 @@ def fetch_coco_samples(ctx: CocoFetchingContext):
     """
     logger.info("Starting COCO samples fetching process")
 
-    _validate_raw_output_directory(ctx)
+    _validate_output_directories(ctx)
 
     # Download COCO samples
     coco_sample = _download_coco_samples(ctx)
@@ -197,5 +217,8 @@ def fetch_coco_samples(ctx: CocoFetchingContext):
 
     # Save filtered dataset
     _save_filtered_dataset(ctx, filtered_ds)
+
+    # Remove raw folder with its content
+    _remove_raw_dataset(ctx)
 
     logger.info("COCO samples fetching process completed successfully")

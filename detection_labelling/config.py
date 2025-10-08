@@ -7,10 +7,28 @@ load_dotenv()
 
 # Get the HOME and DATA paths from the .env file and convert to a Path object
 HOME_DIR = Path(os.getenv("HOME_DIR")).resolve()
-DATA_DIR = Path(os.getenv("DATA_DIR")).resolve()
-MODELS_DIR = Path(os.getenv("MODELS_DIR")).resolve()
+LOCAL_DIR = Path(os.getenv("LOCAL_DIR")).resolve()
 
-for x in ["HOME_DIR", "DATA_DIR", "MODELS_DIR"]:
+DATA_FOLDER = os.getenv("DATA_FOLDER")
+MODELS_FOLDER = os.getenv("MODELS_FOLDER")
+
+LOCAL_DATA_DIR = LOCAL_DIR / DATA_FOLDER
+LOCAL_MODELS_DIR = LOCAL_DIR / MODELS_FOLDER
+
+for x in ["HOME_DIR", "LOCAL_DIR"]:
     path = locals()[x]
     if not path.exists():
         raise ValueError(f"{x} path '{path}' from .env does not exist.")
+
+# Prepare Drive paths, and check correct access to them
+DRIVE_DIR = os.getenv("DRIVE_DIR")
+
+if DRIVE_DIR is not None and Path(DRIVE_DIR).exists():
+    DRIVE_DIR = Path(DRIVE_DIR).resolve()
+
+    DRIVE_DATA_DIR = DRIVE_DIR / DATA_FOLDER
+    DRIVE_MODELS_DIR = DRIVE_DIR / MODELS_FOLDER
+
+else:
+    DRIVE_DATA_DIR = None
+    DRIVE_MODELS_DIR = None

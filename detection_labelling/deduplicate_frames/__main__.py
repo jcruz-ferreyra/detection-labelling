@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from detection_labelling.config import DATA_DIR
-from detection_labelling.utils import load_config, setup_logging
+from detection_labelling.config import LOCAL_DATA_DIR as DATA_DIR
+from detection_labelling.utils import check_missing_keys, load_config, setup_logging
 
 script_name = Path(__file__).parent.name
 logger = setup_logging(script_name, DATA_DIR)
@@ -26,10 +26,7 @@ required_keys = [
     "flann_search_params",
     "is_repeated_threshold",
 ]
-missing_keys = [key for key in required_keys if key not in script_config]
-if missing_keys:
-    logger.error(f"Missing required config keys: {missing_keys}")
-    raise ValueError(f"Missing required config keys: {missing_keys}")
+check_missing_keys(required_keys, script_config)
 
 FLANN_INDEX_PARAMS = script_config["flann_index_params"]
 FLANN_SEARCH_PARAMS = script_config["flann_search_params"]

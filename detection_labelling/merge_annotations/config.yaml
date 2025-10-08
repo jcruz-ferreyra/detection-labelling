@@ -1,0 +1,14 @@
+dataset_folder: raw/cctv_frames
+
+input_folders: # Order descending by confidence
+  - annotations_oob_yolov8x
+  - annotations_oob_yolov8m
+
+class_label:
+  "0": person
+  "1": car
+  "2": bicycle
+  "3": motorcycle
+  "4": truck
+  "5": bus
+  "6": van

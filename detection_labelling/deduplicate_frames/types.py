@@ -18,8 +18,8 @@ class FramesDeduplicationContext:
     flann: Optional[cv2.FlannBasedMatcher] = None
 
     def __post_init__(self):
-        if not self.polygons_json_path.exists():
-            raise FileNotFoundError(f"Json file does not exist at: {self.polygons_json_path}")
-        
         if not self.frames_dir.exists():
             raise FileNotFoundError(f"Json file does not exist at: {self.frames_dir}")
+
+        if not self.polygons_json_path.exists():
+            raise FileNotFoundError(f"Json file does not exist at: {self.polygons_json_path}")

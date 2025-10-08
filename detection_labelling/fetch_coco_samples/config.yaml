@@ -1,4 +1,16 @@
-output_raw_folder: "raw/coco_samples"
-output_interim_folder: "interim/coco_samples_v1"
-project_classes: ["car", "person", "bicycle", "motorcycle", "truck", "bus"]
-underrepresented_classes: ["bicycle", "motorcycle", "bus", "truck"]
+output_raw_folder: raw/coco_samples
+output_interim_folder: interim/coco_samples_v1
+
+project_classes:
+  - car
+  - person
+  - bicycle
+  - motorcycle
+  - truck
+  - bus
+
+underrepresented_classes: 
+  - bicycle
+  - motorcycle
+  - bus
+  - truck

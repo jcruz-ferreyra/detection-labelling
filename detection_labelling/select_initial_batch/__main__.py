@@ -1,8 +1,9 @@
 import os
 from pathlib import Path
 
-from detection_labelling.config import DATA_DIR, MODELS_DIR
-from detection_labelling.utils import load_config, setup_logging
+from detection_labelling.config import LOCAL_DATA_DIR as DATA_DIR
+from detection_labelling.config import LOCAL_MODELS_DIR as MODELS_DIR
+from detection_labelling.utils import check_missing_keys, load_config, setup_logging
 
 script_name = Path(__file__).parent.name
 logger = setup_logging(script_name, DATA_DIR)
@@ -33,10 +34,7 @@ required_keys = [
     "batch_size",
     "sampling",
 ]
-missing_keys = [key for key in required_keys if key not in script_config]
-if missing_keys:
-    logger.error(f"Missing required config keys: {missing_keys}")
-    raise ValueError(f"Missing required config keys: {missing_keys}")
+check_missing_keys(required_keys, script_config)
 
 BYOL_DIR = MODELS_DIR / script_config["byol_dir"]
 BYOL_FILENAME = script_config["byol_filename"]

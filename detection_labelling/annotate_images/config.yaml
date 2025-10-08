@@ -1,26 +1,30 @@
-dataset_folder: "interim/drones_frames"
+dataset_folder: raw/cctv_frames
 
-yolo_path: yolov8m/yolov8m.pt
+yolo_name: yolov8x_v3_1/69594b99c8a84014ade0670908d6ec01/weights/best.pt
 yolo_params:
-  imgsz: 960
+  imgsz: 1280
   verbose: false
-  conf: 0.05
-  iou: 0.4
-  classes: [0, 1, 2, 3, 5, 7]
+  conf: 0.25
+  iou: 0.6
   agnostic_nms: false
 
 class_label:
   "0": person
-  "1": bicycle
-  "2": car
+  "1": car
+  "2": bicycle
   "3": motorcycle
+  "4": truck
   "5": bus
-  "7": truck
+  "6": van
 category_classes:
-  twowheels: [1, 3]
-  car: [2]
-  heavy: [5, 7]
+  person: [0]
+  twowheels: [2, 3]
+  car: [1]
+  heavy: [4, 5]
+  van: [6]
 category_confidence:
-  twowheels: 0.05
-  car: 0.6
-  heavy: 0.6
+  person: 0.25
+  twowheels: 0.25
+  car: 0.5
+  heavy: 0.5
+  van: 0.25

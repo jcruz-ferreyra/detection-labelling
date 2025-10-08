@@ -1,7 +1,8 @@
 from pathlib import Path
 
-from detection_labelling.config import DATA_DIR, MODELS_DIR
-from detection_labelling.utils import load_config, setup_logging
+from detection_labelling.config import DRIVE_MODELS_DIR as MODELS_DIR
+from detection_labelling.config import LOCAL_DATA_DIR as DATA_DIR
+from detection_labelling.utils import check_missing_keys, load_config, setup_logging
 
 script_name = Path(__file__).parent.name
 logger = setup_logging(script_name, DATA_DIR)
@@ -18,18 +19,17 @@ script_config = load_config(CONFIG_PATH)
 
 required_keys = [
     "dataset_folder",
-    "yolo_path",
+    "yolo_name",
     "yolo_params",
     "class_label",
     "category_classes",
     "category_confidence",
 ]
-missing_keys = [key for key in required_keys if key not in script_config]
-if missing_keys:
-    logger.error(f"Missing required config keys: {missing_keys}")
-    raise ValueError(f"Missing required config keys: {missing_keys}")
+check_missing_keys(required_keys, script_config)
 
-YOLO_PATH = MODELS_DIR / script_config["yolo_path"]
+DATASET_FOLDER = script_config["dataset_folder"]
+YOLO_NAME = script_config["yolo_name"]
+
 YOLO_PARAMS = script_config["yolo_params"]
 
 CLASS_LABEL = {int(k): v for k, v in script_config["class_label"].items()}
@@ -38,14 +38,15 @@ CATEGORY_CONFIDENCE = script_config["category_confidence"]
 
 CLASS_CONFIDENCE = [(CATEGORY_CLASSES[k], v) for k, v in CATEGORY_CONFIDENCE.items()]
 
-# Create paths for input and output directories
-DATASET_DIR = DATA_DIR / script_config["dataset_folder"]
-logger.info(f"Images main directory: {DATASET_DIR}")
+logger.info(f"Data directory: {DATA_DIR}")
+logger.info(f"Model directory: {MODELS_DIR}")
 
 # Process video
 context = ImageAnnotationContext(
-    dataset_dir=DATASET_DIR,
-    yolo_path=YOLO_PATH,
+    data_dir=DATA_DIR,
+    models_dir=MODELS_DIR,
+    dataset_folder=DATASET_FOLDER,
+    yolo_name=YOLO_NAME,
     yolo_params=YOLO_PARAMS,
     class_label=CLASS_LABEL,
     category_classes=CATEGORY_CLASSES,

@@ -1,5 +1,5 @@
-frames_folder: "raw/cctv_frames"
-polygons_json_filename: "parking_polygons.json"
+frames_folder: raw/cctv_frames
+polygons_json_filename: parking_polygons.json
 
 flann_index_params:
   algorithm: 1

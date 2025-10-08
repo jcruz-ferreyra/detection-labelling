@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 from xml.etree.ElementTree import parse
 
 import cv2
@@ -10,6 +10,7 @@ from supervision.dataset.formats.pascal_voc import (
     detections_from_xml_obj,
     detections_to_pascal_voc,
 )
+from supervision.detection.core import Detections
 
 
 def save_as_pascal_voc(
@@ -46,6 +47,7 @@ def save_as_pascal_voc(
 def load_pascal_voc_annotation(
     image_path: str,
     annotations_directory_path: str,
+    classes: List,
     force_masks: bool = False,
 ) -> Tuple[sv.Detections, List[str]]:
     """
@@ -64,12 +66,12 @@ def load_pascal_voc_annotation(
     annotation_path = os.path.join(annotations_directory_path, f"{image_stem}.xml")
 
     if not os.path.exists(annotation_path):
-        return sv.Detections.empty(), classes
+        return Detections.empty(), classes
 
     # Get image resolution
     image = cv2.imread(image_path)
     if image is None:
-        return sv.Detections.empty(), classes
+        return Detections.empty(), classes
 
     resolution_wh = (image.shape[1], image.shape[0])
 

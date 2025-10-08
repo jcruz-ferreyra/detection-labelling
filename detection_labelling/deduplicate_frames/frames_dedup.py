@@ -5,7 +5,7 @@ import logging
 import os
 from pathlib import Path
 import shutil
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -108,7 +108,7 @@ def _load_dataset_as_supervision(ctx: FramesDeduplicationContext) -> sv.Detectio
         raise
 
 
-def _get_parking_polygons_from_json(
+def _get_polygons_from_json(
     ctx: FramesDeduplicationContext,
 ) -> Dict[str, list[sv.PolygonZone]]:
     """Load parking polygons from a JSON file and create PolygonZone objects per camera."""
@@ -518,6 +518,9 @@ def deduplicate_frames(ctx: FramesDeduplicationContext) -> None:
 
     video_files = _get_video_ids_with_files(ctx)
 
+    # Load parking zone polygons to filter out annotations
+    camera_polygons = _get_polygons_from_json(ctx)
+
     # Process each video separately
     for video_id, filenames in video_files.items():
 
@@ -525,9 +528,6 @@ def deduplicate_frames(ctx: FramesDeduplicationContext) -> None:
 
         # Load dataset
         ds = _load_dataset_as_supervision(ctx)
-
-        # Load parking zone polygons to filter out annotations
-        camera_polygons = _get_parking_polygons_from_json(ctx)
 
         # Calculate key points and descriptors for each frame
         features_list = _calculate_kp_and_descriptors(ctx, ds, camera_polygons)

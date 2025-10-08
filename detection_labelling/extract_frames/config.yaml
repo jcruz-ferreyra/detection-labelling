@@ -2,8 +2,8 @@ camera_id: F012_27F_MAT
 video_date: 240801
 video_num: 3
 video_extension: .avi
-input_folder : "raw/cctv_videos"
-output_folder : "raw/cctv_frames"
+input_folder : raw/cctv_videos
+output_folder : raw/cctv_frames
 
 yolo_path: yolov8m/yolov8m.pt
 yolo_params:

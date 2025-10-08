@@ -1,11 +1,11 @@
-input_folder: "raw/cctv_frames/"
-output_folder: "interim/cctv_frames_v1"
+input_folder: raw/cctv_frames
+output_folder: interim/cctv_frames_v1
 
-byol_dir: "byol"
-byol_filename: "cctv_byol.pt"
+byol_dir: byol
+byol_filename: cctv_byol.pt
 
-embed_dir: "raw/cctv_frames/embeddings"
-embed_filename: "cctv_embeddings.parquet"
+embed_dir: raw/cctv_frames/embeddings
+embed_filename: cctv_embeddings.parquet
 
 img_size: "256"
 batch_size: "16"

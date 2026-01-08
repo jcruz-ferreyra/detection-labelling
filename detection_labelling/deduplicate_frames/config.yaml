@@ -1,6 +1,8 @@
+# Required paths
 frames_folder: raw/cctv_frames
 polygons_json_filename: parking_polygons.json
 
+# Optional: FLANN matcher parameters (defaults provided below)
 flann_index_params:
   algorithm: 1
   trees: 5

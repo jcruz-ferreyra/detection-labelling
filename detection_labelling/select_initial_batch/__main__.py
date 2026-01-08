@@ -26,26 +26,17 @@ script_config = load_config(CONFIG_PATH)
 required_keys = [
     "input_folder",
     "output_folder",
-    "byol_dir",
     "byol_filename",
-    "embed_dir",
     "embed_filename",
-    "img_size",
-    "batch_size",
     "sampling",
 ]
 check_missing_keys(required_keys, script_config)
 
-BYOL_DIR = MODELS_DIR / script_config["byol_dir"]
-BYOL_FILENAME = script_config["byol_filename"]
-
-EMBED_DIR = DATA_DIR / script_config["embed_dir"]
-EMBED_FILENAME = script_config["embed_filename"]
-
-IMG_SIZE = int(script_config["img_size"])
-BATCH_SIZE = int(script_config["batch_size"])
-
+BYOL_PATH = MODELS_DIR / script_config["byol_filename"]
+EMBED_PATH = DATA_DIR / script_config["embed_filename"]
 SAMPLING = script_config["sampling"]
+
+BYOL_TRAINING = script_config.get("byol_training", {})
 
 # Set path for input and output data
 INPUT_DIR = DATA_DIR / script_config["input_folder"]
@@ -58,22 +49,17 @@ logger.info(f"Selected frames main directory: {OUTPUT_DIR}")
 context = BatchSelectionContext(
     input_dir=INPUT_DIR,
     output_dir=OUTPUT_DIR,
-    byol_dir=BYOL_DIR,
-    byol_filename=BYOL_FILENAME,
-    embed_dir=EMBED_DIR,
-    embed_filename=EMBED_FILENAME,
-    img_size=IMG_SIZE,
-    batch_size=BATCH_SIZE,
+    byol_path=BYOL_PATH,
+    embed_path=EMBED_PATH,
+    byol_training=BYOL_TRAINING,
     sampling=SAMPLING,
 )
 
 if context.train_byol:
-    byol_path = BYOL_DIR / BYOL_FILENAME
     logger.info(f"No BYOL model found at {context.byol_path}. Initializing training.")
     train_byol(context)
 
 if context.calculate_embed:
-    embed_path = EMBED_DIR / EMBED_FILENAME
     logger.info(f"No embeddings found at {context.embed_path}. Initializing calculation.")
     calculate_embeddings(context)
 

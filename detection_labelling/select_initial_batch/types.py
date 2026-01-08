@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 
 from byol_pytorch import BYOL
 import torch
@@ -11,15 +11,11 @@ from torch.utils.data import DataLoader
 class BatchSelectionContext:
     input_dir: Path
     output_dir: Path
-    byol_dir: Path
-    byol_filename: str
-    embed_dir: Path
-    embed_filename: str
-
-    img_size: int = 256
-    batch_size: int = 64
+    byol_path: Path
+    embed_path: Path  # Full absolute path to embeddings file
 
     sampling: Dict = field(default_factory=dict)
+    byol_training: Dict[str, Any] = field(default_factory=dict)
 
     train_byol: bool = False
     calculate_embed: bool = False
@@ -33,30 +29,49 @@ class BatchSelectionContext:
         if not self.input_dir.exists():
             raise FileNotFoundError(f"Frames directory does not exist at: {self.input_dir}")
 
-        byol_path = self.byol_dir / self.byol_filename
-        if not byol_path.is_file():
+        if not self.byol_path.is_file():
             self.train_byol = True
-            byol_path.parent.mkdir(parents=True, exist_ok=True)
+            self.byol_path.parent.mkdir(parents=True, exist_ok=True)
 
-        embed_path = self.embed_dir / self.embed_filename
-        if not embed_path.is_file():
+        # Fill byol_training defaults if training is needed
+        if self.train_byol:
+            self.byol_training = _fill_byol_training_with_defaults(self.byol_training)
+
+        if not self.embed_path.is_file():
             self.calculate_embed = True
-            embed_path.parent.mkdir(parents=True, exist_ok=True)
+            self.embed_path.parent.mkdir(parents=True, exist_ok=True)
 
-        assert Path(self.embed_filename).suffix in [
+        assert self.embed_path.suffix in [
             ".csv",
             ".parquet",
         ], "Embedding filename extension must be '.csv' or '.parquet'"
 
     @property
-    def byol_path(self) -> Path:
-        return self.byol_dir / self.byol_filename
+    def img_size(self) -> int:
+        """Get image size for BYOL training."""
+        return self.byol_training.get("img_size", 256)
+
+    @property
+    def batch_size(self) -> int:
+        """Get batch size for BYOL training."""
+        return self.byol_training.get("batch_size", 64)
 
     @property
     def byol_checkpoint_path(self) -> Path:
-        filename = Path(self.byol_filename)
-        return self.byol_dir / f"{filename.stem}_chp{filename.suffix}"
+        return self.byol_path.parent / f"{self.byol_path.stem}_chp{self.byol_path.suffix}"
 
-    @property
-    def embed_path(self) -> Path:
-        return self.embed_dir / self.embed_filename
+
+def _fill_byol_training_with_defaults(byol_training: Optional[Dict]) -> Dict:
+    """Fill missing BYOL training parameters with default values."""
+
+    defaults = {
+        "img_size": 256,
+        "batch_size": 64,
+    }
+
+    # If no byol_training provided at all, use all defaults
+    if byol_training is None:
+        return defaults
+
+    # Merge: defaults first, then override with user values
+    return {**defaults, **byol_training}

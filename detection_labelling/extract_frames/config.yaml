@@ -1,43 +1,49 @@
-camera_id: F012_27F_MAT
-video_date: 240801
-video_num: 3
-video_extension: .avi
-input_folder : raw/cctv_videos
-output_folder : raw/cctv_frames
+# Video Identification
+camera_id: F012_27F_MAT                     # Camera identifier
+video_date: 240801                          # Video date (YYMMDD format)
+video_num: 3                                # Video number for this date
+video_extension: .avi                       # Video file extension
+input_folder: raw/cctv_videos               # Directory containing input videos
+output_folder: raw/cctv_frames              # Directory for extracted frames
 
-yolo_path: yolov8m/yolov8m.pt
-yolo_params:
-  imgsz: 960
-  verbose: false
-  conf: 0.05
-  iou: 0.4
-  classes: [0, 1, 2, 3, 5, 7]
-  agnostic_nms: false
+# YOLO Detection Model
+yolo_path: yolov8m/yolov8m.pt               # Optional: path to YOLO model weights (default: yolov8m/yolov8m.pt)
+yolo_params:                                # Optional: YOLO inference parameters
+  imgsz: 960                                # Input image size
+  verbose: false                            # Print detection details
+  conf: 0.05                                # Default confidence threshold
+  iou: 0.4                                  # IoU threshold for NMS
+  classes: [0, 1, 2, 3, 5, 7]               # Class IDs to detect (default: all keys from class_label)
+  agnostic_nms: false                       # Class-agnostic NMS
 
-class_label:
+# Class Mapping
+class_label:                                # Mapping of class IDs to names
   "0": person
   "1": bicycle
   "2": car
   "3": motorcycle
   "5": bus
   "7": truck
-category_classes:
-  twowheels: [1, 3]
-  car: [2]
-  heavy: [5, 7]
-category_confidence:
+category_classes:                           # Group class IDs into categories
+  twowheels: [1, 3]                         #  Frames with these classes are prioritized
+  heavy: [5, 7]                             #  Frames with these classes are saved separately
+  car: [2]                                  #  Frames with these classes are saved if no other saved recently
+category_confidence:                        # Optional: per-category confidence thresholds
   twowheels: 0.05
   car: 0.6
   heavy: 0.6
 
-frame_handler_params:
-  fps_of_interest: 0.5
-  n_intermediate: 3
-  seconds_skip_after_save: 2
-  max_seconds_without_save: 10
+# Frame Extraction Parameters
+frame_handler_params:                       # Optional: frame sampling strategy
+  fps_of_interest: 0.5                      #  Target sampling rate (frames per second)
+  n_intermediate: 3                         #  Number of intermediate frames to check
+  seconds_skip_after_save: 2                #  Seconds to skip after saving a frame
+  max_seconds_without_save: 10              #  Seconds to wait before saving frames with just cars
 
-quadrant_scorer_params:
-  grid_size: [4, 4]
-  k: 20
+# Spatial Distribution Scoring
+quadrant_scorer_params:                     # Optional: spatial diversity parameters
+  grid_size: [4, 4]                         #  Grid dimensions for spatial scoring
+  k: 20                                     #  Temperature parameter for the scoring
 
-testing_frame_limit: 10000
+# Testing
+testing_frame_limit: 10000                  # Optional: limit frames processed for testing (0 = no limit)

@@ -1,61 +1,60 @@
-# Cycling Census: Detection Labelling
+# CCTV Inference
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
+## Overview
+Brief what it does + link to cyclist_census
 
-This project extracts, filters, and labels data for detection task.
+### Capabilities
+- Feature 1
+- Feature 2
+- Output description
 
-## Project Organization
+## Installation
+Prerequisites + poetry + env setup + quick check
 
-```
-├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
-├── README.md          <- The top-level README for developers using this project.
-├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
-│
-├── docs               <- A default mkdocs project; see www.mkdocs.org for details
-│
-├── models             <- Trained and serialized models, model predictions, or model summaries
-│
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
-│
-├── pyproject.toml     <- Project configuration file with package metadata for 
-│                         detection_labelling and configuration for tools like black
-│
-├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-│
-├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures        <- Generated graphics and figures to be used in reporting
-│
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`
-│
-├── setup.cfg          <- Configuration file for flake8
-│
-└── detection_labelling   <- Source code for use in this project.
-    │
-    ├── __init__.py             <- Makes detection_labelling a Python module
-    │
-    ├── config.py               <- Store useful variables and configuration
-    │
-    ├── dataset.py              <- Scripts to download or generate data
-    │
-    ├── features.py             <- Code to create features for modeling
-    │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
-    │
-    └── plots.py                <- Code to create visualizations
+## Quick Start
+
+### Task 1: [Name]
+**What it does**: One sentence
+
+**Minimal configuration**:
+```yaml
+# Inline minimal config
 ```
 
---------
+**Run**:
+```bash
+poetry run python -m module.task1
+```
 
+**Output**: Description of what gets generated
+
+**Full configuration**: See [Configuration Reference](#configuration-reference)
+
+### Task 2: [Name]
+...
+
+## Configuration Reference
+Point to config_full.yaml OR full examples here
+
+## How It Works
+
+### Architecture
+File structure + context pattern
+
+### Data Organization
+Where to put inputs/outputs
+
+### Processing Pipeline
+Diagram + flow description
+
+### Key Components
+Algorithm explanations
+
+## Output Format
+(if applicable)
+
+## Troubleshooting
+(if needed)
+
+## Additional Resources
+Link to main cyclist_census repo

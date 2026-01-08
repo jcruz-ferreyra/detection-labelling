@@ -22,20 +22,25 @@ script_config = load_config(CONFIG_PATH)
 required_keys = [
     "frames_folder",
     "polygons_json_filename",
-    "flann_index_params",
-    "flann_search_params",
-    "is_repeated_threshold",
 ]
 check_missing_keys(required_keys, script_config)
 
-FLANN_INDEX_PARAMS = script_config["flann_index_params"]
-FLANN_SEARCH_PARAMS = script_config["flann_search_params"]
-POLYGONS_JSON_PATH = Path(__file__).parent.resolve() / script_config["polygons_json_filename"]
-IS_REPEATED_THRESHOLD = script_config["is_repeated_threshold"]
+# Required parameters
+FRAMES_FOLDER = script_config["frames_folder"]
+POLYGONS_JSON_FILENAME = script_config["polygons_json_filename"]
+
+POLYGONS_JSON_PATH = Path(__file__).parent.resolve() / POLYGONS_JSON_FILENAME
+
+# Optional parameters - use .get()
+FLANN_INDEX_PARAMS = script_config.get("flann_index_params")
+FLANN_SEARCH_PARAMS = script_config.get("flann_search_params")
+IS_REPEATED_THRESHOLD = script_config.get("is_repeated_threshold", 0.05)
 
 # Create paths for frames directory
-FRAMES_DIR = DATA_DIR / script_config["frames_folder"]
+FRAMES_DIR = DATA_DIR / FRAMES_FOLDER
+
 logger.info(f"Extracted frames directory: {FRAMES_DIR}")
+logger.info(f"Polygons JSON path: {POLYGONS_JSON_PATH}")
 
 # Deduplicate frames
 context = FramesDeduplicationContext(

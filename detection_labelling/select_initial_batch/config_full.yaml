@@ -1,0 +1,23 @@
+# Input/Output
+input_folder: path/to/frames/folder    # Directory containing extracted frames (relative to DATA_DIR)
+output_folder: path/to/output/folder   # Directory for selected frames output (relative to DATA_DIR)
+
+# Model Files
+byol_filename: path/to/byol.pt         # Path to BYOL model weights (relative to MODELS_DIR, trains if not exists)
+embed_filename: path/to/embed.parquet  # Path to embeddings file (relative to DATA_DIR, calculates if not exists, .csv or .parquet)
+
+# BYOL Training Parameters
+byol_training:                         # Optional: BYOL training parameters (only used if model doesn't exist)
+  img_size: 256                        #  Image size for training
+  batch_size: 64                       #  Batch size for training
+
+# Sampling Strategy
+sampling:                              # Stratified sampling configuration by dataset split
+  test:                                #  Test split sampling rules
+    - str_match: ["camera_id_1"]       #   Match frames containing this string in filename
+      samples: 100                     #   Number of frames to sample from matches
+  train:                               #  Train split sampling rules
+    - str_match: ["camera_id_2"]       #   Match frames containing this string
+      samples: 15                      #   Number of frames to sample
+    - str_match: null                  #   Match remaining frames (complement of all other matches)
+      samples: 150                     #   Number of frames to sample from remaining

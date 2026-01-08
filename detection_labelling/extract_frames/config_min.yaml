@@ -1,0 +1,20 @@
+# Video Identification
+camera_id: ID00000                     # Camera identifier
+video_date: YYMMDD                     # Video date (YYMMDD format)
+video_num: 1                           # Video number for this date
+video_extension: .avi                  # Video file extension
+input_folder: path/to/videos/folder/   # Directory containing input videos relative to DATA_DIR (.env)
+output_folder: path/to/frames/folder/  # Directory containing input videos relative to DATA_DIR (.env)
+
+# Class Mapping
+class_label:                           # Mapping of class IDs to labels
+  "0": person
+  "1": bicycle
+  "2": car
+  "3": motorcycle
+  "5": bus
+  "7": truck
+category_classes:                      # Group class IDs into categories
+  twowheels: [1, 3]                    #  Frames with these classes are prioritized
+  heavy: [5, 7]                        #  Frames with these classes are saved separately
+  car: [2]                             #  Frames with these classes are saved if no other saved recently

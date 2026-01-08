@@ -24,13 +24,8 @@ required_keys = [
     "video_extension",
     "input_folder",
     "output_folder",
-    "yolo_path",
-    "yolo_params",
     "class_label",
     "category_classes",
-    "category_confidence",
-    "frame_handler_params",
-    "quadrant_scorer_params",
 ]
 check_missing_keys(required_keys, script_config)
 
@@ -39,19 +34,17 @@ VIDEO_DATE = script_config["video_date"]
 VIDEO_NUM = script_config["video_num"]
 VIDEO_EXTENSION = script_config["video_extension"]
 
-YOLO_PATH = MODELS_DIR / script_config["yolo_path"]
-YOLO_PARAMS = script_config["yolo_params"]
+YOLO_PATH = MODELS_DIR / script_config.get("yolo_path", "yolov8m/yolov8m.pt")
+YOLO_PARAMS = script_config.get("yolo_params")
 
 CLASS_LABEL = {int(k): v for k, v in script_config["class_label"].items()}
 CATEGORY_CLASSES = script_config["category_classes"]
-CATEGORY_CONFIDENCE = script_config["category_confidence"]
+CATEGORY_CONFIDENCE = script_config.get("category_confidence")
 
-CLASS_CONFIDENCE = [(CATEGORY_CLASSES[k], v) for k, v in CATEGORY_CONFIDENCE.items()]
+FRAME_HANDLER_PARAMS = script_config.get("frame_handler_params")
+QUADRANT_SCORER_PARAMS = script_config.get("quadrant_scorer_params")
 
-FRAME_HANDLER_PARAMS = script_config["frame_handler_params"]
-QUADRANT_SCORER_PARAMS = script_config["quadrant_scorer_params"]
-
-TESTING_FRAME_LIMIT = int(script_config.get("testing_frame_limit", "0"))
+TESTING_FRAME_LIMIT = script_config.get("testing_frame_limit", 0)
 
 # Create paths for input and output directories
 INPUT_DIR = DATA_DIR / script_config["input_folder"]
@@ -73,7 +66,6 @@ context = FrameExtractionContext(
     yolo_params=YOLO_PARAMS,
     class_label=CLASS_LABEL,
     category_classes=CATEGORY_CLASSES,
-    class_confidence=CLASS_CONFIDENCE,
     frame_handler_params=FRAME_HANDLER_PARAMS,
     quadrant_scorer_params=QUADRANT_SCORER_PARAMS,
     testing_frame_limit=TESTING_FRAME_LIMIT,

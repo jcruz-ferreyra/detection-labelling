@@ -1,0 +1,13 @@
+# Required paths
+frames_folder: path/to/frames/folder           # Directory containing frames (relative to DATA_DIR)
+polygons_json_filename: parking_polygons.json  # Parking area masks to exclude static regions (relative to script location)
+
+# Optional: FLANN matcher parameters (defaults provided below)
+flann_index_params:
+  algorithm: 1                                 # KDTree algorithm for SIFT features (default: 1)
+  trees: 5                                     # Number of trees for indexing (default: 5)
+
+flann_search_params:
+  checks: 50                                   # Number of leaf nodes to check during search (default: 50)
+
+is_repeated_threshold: 0.05                    # Ratio of matched/detected keypoints to consider frames as duplicates (default: 0.05)

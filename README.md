@@ -260,48 +260,136 @@ This pattern provides:
 
 ## How it works
 
-### Task 1: [Process CCTV Video](cctv_inference/process_cctv)
-
-Runs the complete inference pipeline on a single video file, producing count data and optional annotated video output.
+### Task 1: [Extract Frames](detection_labelling/extract_and_upload_frames)
+Extracts vehicle-containing frames from CCTV videos using detection-based sampling with temporal and spatial filtering.
 
 <details>
 <summary><b>Details</b></summary>
 <br>
 
 **Processing Pipeline**:
+1. Initialization
+   - Load YOLO detection model
+   - Initialize FrameHandler (temporal sampling logic)
+   - Initialize QuadrantScorer (spatial diversity scoring)
+   - Load saved frames tracking (resume capability)
+2. Video Processing Loop
+   - Read frame at sampling interval (fps_of_interest)
+   - Run YOLO detection with category-specific confidence thresholds
+   - Filter detections by category (two-wheels, cars, heavy vehicles)
+   - Check temporal constraints (skip period after recent save)
+   - Score frame spatial distribution (quadrant-based)
+   - Save frame if criteria met
+3. Category-Specific Logic
+   - **Two-wheels (bicycle, motorcycle)**: Check near frames and save the one with the highest score.
+   - **Heavy vehicles (bus, truck)**: Save always to increase representativity
+   - **Cars**: Only saved if no other category saved recently (max_seconds_without_save threshold)
+4. Scoring two-wheelers frames
+   - Score higher frames with low confidence two-wheeler detections (hard to detect with pretrained models)
+   - Divide frame into grid (default 4×4) and score higher frames with detections in low frequency quadrants
+   - Score higher frames with high detection class diversity
+6. Output Organization
+   - Frames saved in a single folder: `{output_dir}/{filename}.jpg`
+   - Tracking JSON maintains list of saved frames per video per vehicle category
 
-1. Intialization
-   - Initialize models and tracker
-   - Initialize line counters
-   - Initialize annotators (if video output enabled)
+**Key Algorithms**:
+- **FrameHandler**: Manages sampling intervals, skip periods, and timeout thresholds for temporal filtering
+- **QuadrantScorer**: Scores frames based on detection spatial distribution to maximize dataset diversity
+- **Lazy Loading**: Processes videos individually to handle large datasets (50k+ frames) without memory issues
 
-2. Processing Loop
-   - Read frame from video
-   - Run object detection (YOLO/RFDETR)
-   - Update tracker with detections
-   - Extract cyclists (person + bicycle IoU matching)
-   - Classify cyclists (gender prediction)
-   - Trigger line counters for each detection
-   - Annotate frame (if video output enabled)
+</details>
 
-3. Partition Completion (every N minutes)
-   - Aggregate gender classifications using temporal weighting
-   - Calculate counts by vehicle type, gender, lane, and direction
-   - Save results (JSON/CSV)
-   - Save cyclist crops (if enabled)
-   - Rotate video output file
-   - Reset counters for next partition
+---
 
-4. Finalization
-   - Process final partition
-   - Clean up temporary files
-   - Close video output
+### Task 2: [Deduplicate Frames](detection_labelling/deduplicate_frames)
+Removes duplicate frames using SIFT feature matching to ensure dataset uniqueness while preserving parking area visibility.
 
-**Key algorithms**
+<details>
+<summary><b>Details</b></summary>
+<br>
 
-- Cyclist extraction: IoU-based matching between person and bicycle detections
-- Gender aggregation: Weighted mean of classifications for each track (near camera classifications weighted more)
-- Line counting: Direction-aware crossing detection with double-count prevention using tracker ID tracking
+**Processing Pipeline**:
+1. Initialization
+   - Load parking area polygons (regions to exclude from comparison)
+   - Initialize SIFT feature detector
+   - Initialize FLANN matcher with KD-tree index
+   - Group frames by video ID for memory-efficient processing
+2. Video-by-Video Processing
+   - Load all frames for single video into temporary directory
+   - For each frame:
+     - Extract SIFT keypoints and descriptors
+     - Mask out parking area regions (exclude parked vehicles)
+     - Compare with previous frames using FLANN matching
+     - Mark as duplicate if similarity > threshold
+   - Move non-duplicate frames to output directory
+   - Clean up temporary directory
+3. Duplicate Detection
+   - Calculate good matches using Lowe's ratio test
+   - Compute similarity score: `good_matches / min(kp1, kp2)`
+   - Mark as duplicate if similarity > is_repeated_threshold (default 0.05)
+4. Memory Management
+   - Process one video at a time (prevents OOM with 53k+ frames)
+   - Use temporary directory for isolated processing
+   - Clean up after each video completion
+
+**Key Algorithms**:
+- **SIFT Feature Extraction**: Scale-invariant features robust to lighting/perspective changes
+- **FLANN Matching**: Fast approximate nearest neighbor search for high-dimensional descriptors
+- **Parking Masking**: Excludes static parked vehicles from similarity comparison
+- **Video-Grouped Processing**: Handles large datasets by processing videos in isolation
+
+</details>
+
+---
+
+### Task 3: [Select Initial Batch](detection_labelling/select_initial_batch)
+Selects a diverse, stratified subset of frames for annotation using BYOL-based embeddings and camera-aware sampling.
+
+<details>
+<summary><b>Details</b></summary>
+<br>
+
+**Processing Pipeline**:
+1. BYOL Training (if model doesn't exist)
+   - Train self-supervised BYOL model on extracted frames
+   - Learn visual representations without labels
+   - Save model and checkpoints for resumption
+2. Embedding Calculation (if embeddings don't exist)
+   - Load trained BYOL model
+   - Extract embeddings for all frames
+   - Save embeddings to Parquet/CSV for reuse
+3. Stratified Sampling
+   - Load embeddings and frame metadata
+   - Group frames by camera ID and dataset split (train/test)
+   - Apply sampling rules:
+     - **String matching**: Select N samples from frames matching camera pattern
+     - **Complement sampling**: Select N samples from remaining unmatched frames
+   - Ensure diverse representation across cameras and conditions
+   - Prioritize frames with two-wheelers detections
+4. Output Generation
+   - Copy selected frames to split-specific directories (train/test)
+   - Maintain original filenames for traceability
+
+**Sampling Configuration**:
+```yaml
+sampling:
+  test:
+    - str_match: ["F053_LAG_H35"]  # Specific camera
+      samples: 100
+  train:
+    - str_match: ["domo"]          # Camera pattern
+      samples: 15
+    - str_match: null              # Remaining frames
+      samples: 150
+```
+
+**Key Algorithms**:
+- **BYOL (Bootstrap Your Own Latent)**: Self-supervised learning creates visual embeddings without labels
+- **Stratified Sampling**: Ensures balanced representation across cameras, preventing bias toward high-traffic locations
+- **String Matching**: Flexible camera selection using substring patterns in filenames
+- **Complement Sampling**: `str_match: null` selects from frames not matched by other rules
+
+**Use Case**: Creates initial labeled dataset for training detection models, balancing camera diversity and dataset size constraints.
 
 </details>
 
@@ -339,37 +427,3 @@ If you use this tool in your research, please cite:
 ### License
 
 MIT License - see [LICENSE](LICENSE) file for details.
-
-
-**Output**: Description of what gets generated
-
-**Full configuration**: See [Configuration Reference](#configuration-reference)
-
-### Task 2: [Name]
-...
-
-## Configuration Reference
-Point to config_full.yaml OR full examples here
-
-## How It Works
-
-### Architecture
-File structure + context pattern
-
-### Data Organization
-Where to put inputs/outputs
-
-### Processing Pipeline
-Diagram + flow description
-
-### Key Components
-Algorithm explanations
-
-## Output Format
-(if applicable)
-
-## Troubleshooting
-(if needed)
-
-## Additional Resources
-Link to main cyclist_census repo

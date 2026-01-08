@@ -114,10 +114,101 @@ For a complete reference with all available options and detailed comments, see [
 poetry run python -m detection_labelling.extract_frames
 ```
 
-**Output** (saved to `output_folder/{camera_id}`):
-- `{camera_id}_{video_date}_{video_num}_{frame_number}.jpg` - Extracted frames organized by camera
+**Output** (saved to `output_folder`):
+- `images/{camera_id}_{video_date}_{video_num}_{frame_number}.jpg` - Extracted frames organized by camera
+- `annotations_oob/{camera_id}_{video_date}_{video_num}_{frame_number}.xml` - Annotations of extracted frames
 - `saved_frames.json` - Tracking file with metadata for saved frames
-- `processing_stats.json` - Statistics on extraction process (frames processed, saved, skipped)
+- Processing logs show statistics on extraction process (frames processed, saved, skipped)
+
+### Task 2: [Deduplicate Frames](detection_labelling/deduplicate_frames)
+
+Removes visually similar frames using SIFT keypoint matching to reduce annotation redundancy.
+
+**Configuration**:
+
+Processing Configuration ([`config.yaml`](detection_labelling/deduplicate_frames/config.yaml))
+
+YAML file defining frame locations and SIFT matching parameters:
+
+```yaml
+frames_folder: path/to/frames/folder           # Directory containing frames (relative to DATA_DIR)
+polygons_json_filename: parking_polygons.json  # Parking area masks to exclude static regions (relative to script location)
+```
+
+For a complete reference with all available options and detailed comments, see [`config_full.yaml`](detection_labelling/deduplicate_frames/config_full.yaml).
+
+Parking Polygons Configuration ([`parking_polygons.json`](detection_labelling/deduplicate_frames/parking_polygons.json))
+
+JSON file defining static regions (parking areas) to exclude from keypoint matching, organized by camera ID. Each polygon is an array of `[x, y]` coordinates:
+```json
+{
+  "F012_27F_MAT_240801": [
+    [[111, 141], [150, 141], [261, 0], [200, 0], [111, 90]]
+  ],
+  "F029_PEL_COR": [
+    [[260, 78], [260, 88], [90, 576], [0, 576], [0, 488], [237, 78]],
+    [[464, 86], [495, 86], [704, 208], [704, 275], [464, 92]]
+  ],
+  ...
+}
+```
+
+**Note**: Use `[[0, 0]]` for cameras without parking areas to exclude.
+
+**Run**:
+```bash
+poetry run python -m detection_labelling.deduplicate_frames
+```
+
+**Output** (processed in-place in `frames_folder`):
+- Duplicate frames and annotations are moved to `repeated` folder in the same directory
+- Unique frames remain organized by camera/video source
+- Processing logs show deduplication statistics per video
+
+### Task 3: [Select Initial Batch](detection_labelling/select_initial_batch)
+
+Uses BYOL (Bootstrap Your Own Latent) unsupervised learning to create diverse embeddings, then performs stratified sampling for train/test splits.
+
+**Configuration**:
+
+Processing Configuration ([`config.yaml`](detection_labelling/select_initial_batch/config.yaml))
+
+YAML file defining input/output paths, BYOL model settings, and sampling strategy:
+
+```yaml
+# Input/Output
+input_folder: path/to/frames/folder    # Directory containing extracted frames (relative to DATA_DIR)
+output_folder: path/to/output/folder   # Directory for selected frames output (relative to DATA_DIR)
+
+# Model Files
+byol_filename: path/to/byol.pt         # Path to BYOL model weights (relative to MODELS_DIR, trains if not exists)
+embed_filename: path/to/embed.parquet  # Path to embeddings file (relative to DATA_DIR, calculates if not exists, .csv or .parquet)
+
+# Sampling Strategy
+sampling:                              # Stratified sampling configuration by dataset split
+  test:                                # Test split sampling rules
+    - str_match: ["camera_id_1"]       #  Match frames containing this string in filename
+      samples: 100                     #  Number of frames to sample from matches
+  train:                               # Train split sampling rules
+    - str_match: ["camera_id_2"]       #  Match frames containing this string
+      samples: 15                      #  Number of frames to sample
+    - str_match: null                  #  Match remaining frames (complement of all other matches)
+      samples: 150                     #  Number of frames to sample from remaining
+```
+
+For a complete reference with all available options and detailed comments, see [`config_full.yaml`](detection_labelling/select_initial_batch/config_full.yaml).
+
+**Run**:
+```bash
+poetry run python -m detection_labelling.select_initial_batch
+```
+
+**Output** (datasets saved to `output_folder`):
+- `train/` - Selected training frames based on sampling strategy
+- `test/` - Selected test frames based on sampling strategy
+  
+- `DATA_DIR/{embed_filename}` - Embeddings file (CSV or Parquet) for all frames
+- `MODELS_DIR/{byol_filename}` - Trained BYOL model weights (if trained during this run)
 
 <br>
 
@@ -125,18 +216,18 @@ poetry run python -m detection_labelling.extract_frames
 
 ### Task Architecture
 
-Each task within `cctv_inference` folder follows a consistent structure:
+Each task within `detection_labelling` folder follows a consistent structure:
 
 ```
-process_cctv/
+extract_frames/
 ├── __init__.py                 # Package initialization
 ├── __main__.py                 # Entry point - handles CLI and orchestration
-├── config_min.yaml             # Minimum configuration reference
+├── config_min.yaml             # Minimum configuration reference (in tasks with verbose config_full)
 ├── config_full.yaml            # Complete configuration reference
 ├── config.yaml                 # Processing configuration (user's working copy)
 ├── types.py                    # Context dataclass definition
-├── cctv_processing.py          # Core processing logic (called from __main__.py)
-└── *.py                        # Modular helper functions (called from cctv_processing.py)
+├── frame_extraction.py         # Core processing logic (called from __main__.py)
+└── *.py                        # Modular helper functions (called from frame_extraction.py)
 ```
 
 **Context Pattern**:
@@ -145,17 +236,17 @@ All tasks use a context object to eliminate parameter passing complexity:
 
 ```python
 @dataclass
-class CCTVProcessingContext:
+class FrameExtractionContext:
    # Configuration from YAML
-   data_dir: Path
-   models_dir: Path
-   frame_processing: Dict[str, Any]
-   detection: Dict[str, Any]
+   video_path: Path
+   output_dir: Path
+   class_label: Dict[int, str]
+   category_classes: Dict[str, list]
    ...
     
    # Runtime objects (initialized during setup)
-   detection_model: Optional[Any] = None
-   tracker: Optional[Any] = None
+   model: Optional[YOLO] = None
+   generator: Optional[Generator] = None
    ...
 ```
 
@@ -248,4 +339,5 @@ If you use this tool in your research, please cite:
 ### License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+
 

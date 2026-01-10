@@ -2,7 +2,7 @@
 
 Dataset preparation pipeline for training object detection models on CCTV footage.
 
-> **Part of the [Cyclist Census](https://github.com/jcruz-ferreyra/cyclist_census) research project** - See the main repository for methodology, results, and the complete development pipeline.
+> **Part of the [Cyclist Census](https://github.com/jcruz-ferreyra/cyclist-census) research project** - See the main repository for methodology, results, and the complete development pipeline.
 
 <br>
 
@@ -401,15 +401,15 @@ For complete methodology, research context, and the full development pipeline, s
 
 ### Related Repositories
 
-- **[detection_labelling](https://github.com/yourusername/detection_labelling)** - Dataset preparation for object detection models
-- **[detection_training](https://github.com/yourusername/detection_training)** - YOLO/RFDETR model training pipeline
-- **[classification_labelling](https://github.com/yourusername/classification_labelling)** - Dataset preparation for gender classification
-- **[classification_training](https://github.com/yourusername/classification_training)** - CNN classifier training with Optuna optimization
+- **[detection_labelling](https://github.com/jcruz-ferreyra/detection-labelling)** - Dataset preparation for object detection models
+- **[detection_training](https://github.com/jcruz-ferreyra/detection-training)** - YOLO/RFDETR model training pipeline
+- **[classification_labelling](https://github.com/jcruz-ferreyra/classification-labelling)** - Dataset preparation for gender classification
+- **[classification_training](https://github.com/jcruz-ferreyra/classification-training)** - CNN classifier training with Optuna optimization
 
 ### Support
 
 For questions or issues:
-- **GitHub Issues**: [cctv-inference/issues](https://github.com/jcruz-ferreyra/cctv-inference/issues)
+- **GitHub Issues**: [cctv-inference/issues](https://github.com/jcruz-ferreyra/detection-labelling/issues)
 
 ### Citation
 
@@ -427,3 +427,4 @@ If you use this tool in your research, please cite:
 ### License
 
 MIT License - see [LICENSE](LICENSE) file for details.
+
